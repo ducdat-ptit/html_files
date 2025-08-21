@@ -22,7 +22,7 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
   label { display: flex; justify-content: space-between; margin: 5px 0; }
-  input[type=number] { width: 80px; }
+  input[type=number], input[type=tel] { width: 80px; }
   button {
     padding: 8px 12px;
     border-radius: 8px;
@@ -89,7 +89,8 @@
     <div id="questionBox" style="display:none;">
       <div class="question" id="questionText"></div>
       <div id="inputMode" class="center" style="display:none;">
-        <input type="number" id="answerInput" placeholder="Nhập đáp án">
+        <!-- Đã chỉnh để chỉ nhập số nguyên -->
+        <input type="tel" id="answerInput" inputmode="numeric" pattern="[0-9]*" placeholder="Nhập đáp án">
         <button id="checkBtn" class="primary">Kiểm tra</button>
       </div>
       <div id="choiceMode" class="choices" style="display:none;"></div>
@@ -225,10 +226,18 @@ function checkAnswer(value) {
 }
 
 startBtn.onclick = startSession;
+
+// 🔒 Chỉ chấp nhận số nguyên
 checkBtn.onclick = () => {
-  if (answerInputEl.value.trim() === '') return;
-  checkAnswer(Number(answerInputEl.value));
+  const val = answerInputEl.value.trim();
+  if (!/^-?\d+$/.test(val)) {  // chỉ cho phép số nguyên (có thể âm)
+    feedbackEl.style.color = '#dc2626';
+    feedbackEl.textContent = 'Vui lòng nhập số nguyên!';
+    return;
+  }
+  checkAnswer(Number(val));
 };
+
 nextBtn.onclick = nextQuestion;
 </script>
 </body>
