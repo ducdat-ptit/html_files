@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Toán Vui Cho Bé — Cộng & Trừ</title>
+<style>
+  body {
+    font-family: sans-serif;
+    background: linear-gradient(to bottom right, #f0f9ff, #ecfdf5);
+    color: #334155;
+    margin: 0;
+    padding: 20px;
+  }
+  .container { max-width: 600px; margin: auto; }
+  h1 { font-size: 1.8rem; font-weight: bold; text-align: center; }
+  .card {
+    background: rgba(255,255,255,0.8);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  label { display: flex; justify-content: space-between; margin: 5px 0; }
+  input[type=number] { width: 80px; }
+  button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+  }
+  button.primary { background: #059669; color: white; border: none; }
+  button.choice {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    min-width: 60px;
+  }
+  .progress-bar {
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+  }
+  .progress {
+    height: 100%;
+    background: linear-gradient(to right, #0ea5e9, #10b981);
+    width: 0%;
+  }
+  .question { font-size: 2rem; font-weight: bold; text-align: center; margin: 20px 0; }
+  .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .center { text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Toán Vui Cho Bé — Cộng & Trừ</h1>
+
+  <div class="card">
+    <label>Giới hạn số (0..N):
+      <input type="number" id="limit" min="1" max="99" value="10">
+    </label>
+    <label>Số câu mỗi lượt:
+      <input type="number" id="questionCount" min="5" max="50" value="10">
+    </label>
+    <label>Chế độ trả lời:
+      <select id="mode">
+        <option value="input">Nhập kết quả</option>
+        <option value="choice">Chọn đáp án</option>
+      </select>
+    </label>
+    <label>Cho phép kết quả âm:
+      <input type="checkbox" id="allowNegative">
+    </label>
+    <div class="center" style="margin-top:10px;">
+      <button id="startBtn" class="primary">Bắt đầu luyện tập</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div>Điểm: <span id="score">0</span> / <span id="total">0</span></div>
+    <div>Streak 🔥: <span id="streak">0</span></div>
+    <div>Câu: <span id="currentQ">0</span> / <span id="totalQ">0</span></div>
+    <div class="progress-bar"><div class="progress" id="progress"></div></div>
+  </div>
+
+  <div class="card" id="quizArea">
+    <div id="startHint" class="center">Nhấn "Bắt đầu luyện tập" để tạo câu hỏi nhé!</div>
+    <div id="questionBox" style="display:none;">
+      <div class="question" id="questionText"></div>
+      <div id="inputMode" class="center" style="display:none;">
+        <input type="number" id="answerInput" placeholder="Nhập đáp án">
+        <button id="checkBtn" class="primary">Kiểm tra</button>
+      </div>
+      <div id="choiceMode" class="choices" style="display:none;"></div>
+      <div id="feedback" class="center" style="margin-top:15px;font-weight:bold;"></div>
+      <div class="center" style="margin-top:15px;">
+        <button id="nextBtn">Câu tiếp theo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let limit = 10;
+let questionCount = 10;
+let allowNegative = false;
+let mode = 'input';
+let started = false;
+let qIndex = 0;
+let score = 0;
+let streak = 0;
+let currentQuestion = null;
+
+const limitEl = document.getElementById('limit');
+const questionCountEl = document.getElementById('questionCount');
+const allowNegativeEl = document.getElementById('allowNegative');
+const modeEl = document.getElementById('mode');
+const scoreEl = document.getElementById('score');
+const totalEl = document.getElementById('total');
+const streakEl = document.getElementById('streak');
+const currentQEl = document.getElementById('currentQ');
+const totalQEl = document.getElementById('totalQ');
+const progressEl = document.getElementById('progress');
+const questionTextEl = document.getElementById('questionText');
+const startBtn = document.getElementById('startBtn');
+const startHint = document.getElementById('startHint');
+const questionBox = document.getElementById('questionBox');
+const inputModeEl = document.getElementById('inputMode');
+const choiceModeEl = document.getElementById('choiceMode');
+const answerInputEl = document.getElementById('answerInput');
+const checkBtn = document.getElementById('checkBtn');
+const feedbackEl = document.getElementById('feedback');
+const nextBtn = document.getElementById('nextBtn');
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function genQuestion() {
+  const op = Math.random() < 0.5 ? '+' : '-';
+  let a = randInt(0, limit);
+  let b = randInt(0, limit);
+  if (op === '-' && !allowNegative && b > a) [a, b] = [b, a];
+  return {a, b, op, answer: op === '+' ? a + b : a - b};
+}
+function genChoices(correct) {
+  const set = new Set([correct]);
+  while (set.size < 4) {
+    let candidate = correct + (Math.random()<0.5?-1:1)*randInt(1,5);
+    if (Math.abs(candidate) <= limit*2) set.add(candidate);
+  }
+  return Array.from(set).sort(() => Math.random() - 0.5);
+}
+function updateProgress() {
+  progressEl.style.width = ((qIndex/questionCount)*100) + '%';
+}
+function showQuestion() {
+  currentQEl.textContent = qIndex+1;
+  totalQEl.textContent = questionCount;
+  questionTextEl.textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b} = ?`;
+  feedbackEl.textContent = '';
+  if (mode === 'input') {
+    inputModeEl.style.display = 'block';
+    choiceModeEl.style.display = 'none';
+    answerInputEl.value = '';
+    answerInputEl.focus();
+  } else {
+    inputModeEl.style.display = 'none';
+    choiceModeEl.style.display = 'grid';
+    choiceModeEl.innerHTML = '';
+    genChoices(currentQuestion.answer).forEach(c => {
+      const btn = document.createElement('button');
+      btn.textContent = c;
+      btn.className = 'choice';
+      btn.onclick = () => checkAnswer(c);
+      choiceModeEl.appendChild(btn);
+    });
+  }
+}
+function startSession() {
+  limit = parseInt(limitEl.value) || 10;
+  questionCount = parseInt(questionCountEl.value) || 10;
+  allowNegative = allowNegativeEl.checked;
+  mode = modeEl.value;
+  score = 0; streak = 0; qIndex = 0;
+  totalEl.textContent = questionCount;
+  scoreEl.textContent = 0;
+  streakEl.textContent = 0;
+  started = true;
+  startHint.style.display = 'none';
+  questionBox.style.display = 'block';
+  currentQuestion = genQuestion();
+  showQuestion();
+  updateProgress();
+}
+function nextQuestion() {
+  if (qIndex+1 >= questionCount) {
+    started = false;
+    feedbackEl.textContent = `Hoàn thành! Điểm: ${score}/${questionCount}`;
+    questionTextEl.textContent = '';
+    inputModeEl.style.display = 'none';
+    choiceModeEl.style.display = 'none';
+    return;
+  }
+  qIndex++;
+  currentQuestion = genQuestion();
+  showQuestion();
+  updateProgress();
+}
+function checkAnswer(value) {
+  if (value === currentQuestion.answer) {
+    score++;
+    streak++;
+    scoreEl.textContent = score;
+    streakEl.textContent = streak;
+    feedbackEl.style.color = '#059669';
+    feedbackEl.textContent = 'Đúng rồi! Tuyệt vời!';
+    setTimeout(nextQuestion, 600);
+  } else {
+    streak = 0;
+    streakEl.textContent = 0;
+    feedbackEl.style.color = '#dc2626';
+    feedbackEl.textContent = `Chưa đúng. Kết quả đúng là ${currentQuestion.answer}`;
+  }
+}
+
+startBtn.onclick = startSession;
+checkBtn.onclick = () => {
+  if (answerInputEl.value.trim() === '') return;
+  checkAnswer(Number(answerInputEl.value));
+};
+nextBtn.onclick = nextQuestion;
+</script>
+</body>
+</html>
