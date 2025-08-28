@@ -22,7 +22,7 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
   label { display: flex; justify-content: space-between; margin: 5px 0; }
-  input[type=number], input[type=tel] { width: 80px; }
+  input[type=number] { width: 80px; }
   button {
     padding: 8px 12px;
     border-radius: 8px;
@@ -50,6 +50,62 @@
   .question { font-size: 2rem; font-weight: bold; text-align: center; margin: 20px 0; }
   .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .center { text-align: center; }
+
+  /* === Mobile optimizations === */
+  @media (max-width: 480px) {
+    html, body {
+      font-size: 18px; /* base bump for readability */
+    }
+    body {
+      padding: 10px;
+    }
+    .container {
+      max-width: 100%;
+    }
+    h1 {
+      font-size: 1.6rem;
+      line-height: 1.2;
+    }
+    .card {
+      padding: 12px;
+    }
+    label {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 1rem;
+    }
+    input[type=number], select {
+      width: 100%;
+      font-size: 1rem;
+      padding: 10px;
+    }
+    input[type=number]#limit,
+    input[type=number]#questionCount {
+      max-width: 100%;
+    }
+    button {
+      font-size: 1rem;
+      padding: 12px 14px;
+      min-height: 44px;           /* comfortable touch target */
+      width: 100%;                /* full width buttons for easier tap */
+    }
+    .question {
+      font-size: 2.2rem;
+    }
+    .choices {
+      grid-template-columns: 1fr; /* stack choices vertically */
+      gap: 12px;
+    }
+    button.choice {
+      font-size: 1.1rem;
+      padding: 14px;
+      min-height: 48px;
+    }
+    .progress-bar {
+      height: 12px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -89,8 +145,7 @@
     <div id="questionBox" style="display:none;">
       <div class="question" id="questionText"></div>
       <div id="inputMode" class="center" style="display:none;">
-        <!-- Đã chỉnh để chỉ nhập số nguyên -->
-        <input type="tel" id="answerInput" inputmode="numeric" pattern="[0-9]*" placeholder="Nhập đáp án">
+        <input type="number" id="answerInput" placeholder="Nhập đáp án">
         <button id="checkBtn" class="primary">Kiểm tra</button>
       </div>
       <div id="choiceMode" class="choices" style="display:none;"></div>
@@ -226,18 +281,10 @@ function checkAnswer(value) {
 }
 
 startBtn.onclick = startSession;
-
-// 🔒 Chỉ chấp nhận số nguyên
 checkBtn.onclick = () => {
-  const val = answerInputEl.value.trim();
-  if (!/^-?\d+$/.test(val)) {  // chỉ cho phép số nguyên (có thể âm)
-    feedbackEl.style.color = '#dc2626';
-    feedbackEl.textContent = 'Vui lòng nhập số nguyên!';
-    return;
-  }
-  checkAnswer(Number(val));
+  if (answerInputEl.value.trim() === '') return;
+  checkAnswer(Number(answerInputEl.value));
 };
-
 nextBtn.onclick = nextQuestion;
 </script>
 </body>
